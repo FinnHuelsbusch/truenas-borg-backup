@@ -1,3 +1,4 @@
+#!/bin/bash
 # Load environment variables from .env file
 set -a
 source .env
@@ -11,7 +12,7 @@ set +a
 
 # Build the borg container 
 echo "Building borg container"
-docker build -t borg-backup /mnt/external-backup/
+docker build -t borg-backup ${BACKUP_MOUNT_POINT}
 echo "Borg container built successfully"
 
 
@@ -25,7 +26,7 @@ echo "Borg container built successfully"
 # Immich 
 # Put immich server into maintenance mode to avoid inconsistent backups
 echo "Putting Immich into maintenance mode"
-mkdir -p "/mnt/external-backup/tmp/service-backups/immich/"
+mkdir -p "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/"
 docker exec -d $IMMICH_SERVER_CONTAINER_NAME sh -c "immich-admin enable-maintenance-mode"
 # Wait for a few seconds to ensure the command is processed
 echo "Waiting 15 seconds to start maintenance mode"
@@ -33,15 +34,15 @@ sleep 15
 echo "Starting Immich Database dump"
 # Backup Immich database
 export PGPASSWORD=$IMMICH_DATABASE_PASSWORD
-docker exec -t $IMMICH_DATABASE_CONTAINER_NAME pg_dumpall --clean --if-exists --username=$IMMICH_DATABASE_USERNAME > /mnt/external-backup/tmp/service-backups/immich/immich_database_backup.sql
+docker exec -t $IMMICH_DATABASE_CONTAINER_NAME pg_dumpall --clean --if-exists --username=$IMMICH_DATABASE_USERNAME > "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/immich_database_backup.sql"
 echo "Immich database backup completed remaining in maintenance mode for borg backup"
 
 # Mealie
 echo "Creating backup of Mealie"
-MEALIE_TARGET_DIR="/mnt/external-backup/tmp/service-backups/mealie/"
+MEALIE_TARGET_DIR="${BACKUP_MOUNT_POINT}tmp/service-backups/mealie/"
 mkdir -p "$MEALIE_TARGET_DIR"
 curl -s -X 'POST' \
-  'https://mealie.huelsbusch.me/api/admin/backups' \
+  "${MEALIE_URL}/api/admin/backups" \
   -H 'accept: application/json' \
   -H "Authorization: Bearer ${MEALIE_API_KEY}" \
   -w '\n%{http_code}' | tail -1 | grep -q 201
@@ -49,16 +50,16 @@ curl -s -X 'POST' \
 if [ $? -eq 0 ]; then
   echo "Mealie backup successfully created"
   MEALIE_LATEST_BACKUP=$(curl -s -X 'GET' \
-  'https://mealie.huelsbusch.me/api/admin/backups' \
+  "${MEALIE_URL}/api/admin/backups" \
   -H 'accept: application/json' \
   -H "Authorization: Bearer ${MEALIE_API_KEY}" | jq -r '.imports[0].name')
   echo "Latest Mealie backup: $MEALIE_LATEST_BACKUP"
   curl -s -X 'GET' \
-  "https://mealie.huelsbusch.me/api/admin/backups/$MEALIE_LATEST_BACKUP" \
+  "${MEALIE_URL}/api/admin/backups/$MEALIE_LATEST_BACKUP" \
   -H 'accept: application/json' \
   -H "Authorization: Bearer ${MEALIE_API_KEY}" | jq -r '.fileToken' | \
   xargs -I {} curl -s -o "$MEALIE_TARGET_DIR/$MEALIE_LATEST_BACKUP" \
-  "https://mealie.huelsbusch.me/api/admin/backups/$MEALIE_LATEST_BACKUP/download?token={}"
+  "${MEALIE_URL}/api/admin/backups/$MEALIE_LATEST_BACKUP/download?token={}"
   echo "Mealie backup downloaded to $MEALIE_TARGET_DIR$MEALIE_LATEST_BACKUP"
 
 else
@@ -67,7 +68,7 @@ fi
 
 # Audiobookshelf
 echo "Creating backup of Audiobookshelf"
-ADB_TARGET_DIR="/mnt/external-backup/tmp/service-backups/audiobookshelf/"
+ADB_TARGET_DIR="${BACKUP_MOUNT_POINT}tmp/service-backups/audiobookshelf/"
 mkdir -p "$ADB_TARGET_DIR"
 echo "Creating backup of Audiobookshelf to $ADB_TARGET_DIR"
 LAST_ADB=$(ls -1 "$AUDIOBOOKSHELF_BACKUP_SRC_LOCATION" | sort | tail -1)
@@ -118,7 +119,7 @@ docker run --rm -e BORG_PASSPHRASE="$BORG_PASSPHRASE" \
   --exclude-from "$EXCLUDE_FILE" \
   "${BORG_REPO_PATH}::${BACKUP_NAME}" \
   "${MASSSTORAGE_DATASET}" \
-  "/mnt/external-backup/tmp/service-backups/" \
+  "${BACKUP_MOUNT_POINT}tmp/service-backups/" \
   "${PAPERLESS_NGX_DATABASE_FOLDER}"
 
 #  ____                  _            ____                       _     _      
@@ -140,5 +141,5 @@ echo "Finished restarting Paperless-ngx containers"
 
 # Cleanup temporary backup files
 echo "Cleaning up temporary backup files"
-rm -rf /mnt/external-backup/tmp/service-backups/
+rm -rf ${BACKUP_MOUNT_POINT}tmp/service-backups/
 echo "Backup process completed successfully"
