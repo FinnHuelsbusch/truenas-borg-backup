@@ -3,3 +3,6 @@
 **/media/videos/jellyfin/**
 **/media/nextcloud/**
 **/backup/truenas/**
+**/immich/thumbs/**
+**/immich/encoded-video/**
+**/paperless-ngx/media/documents/thumbnails/**
