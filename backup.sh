@@ -12,7 +12,8 @@ set +a
 
 # Build the borg container 
 echo "Building borg container"
-docker build -t borg-backup "$BORG_DOCKER_BUILD_CONTEXT" 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+docker build -t borg-backup "$SCRIPT_DIR"
 echo "Borg container built successfully"
 
 
