@@ -12,7 +12,7 @@ set +a
 
 # Build the borg container 
 echo "Building borg container"
-docker build -t borg-backup ${BACKUP_MOUNT_POINT}
+docker build -t borg-backup "$BORG_DOCKER_BUILD_CONTEXT" 
 echo "Borg container built successfully"
 
 
@@ -25,8 +25,9 @@ echo "Borg container built successfully"
 
 # Mealie
 echo "Creating backup of Mealie"
-MEALIE_TARGET_DIR="${BACKUP_MOUNT_POINT}tmp/service-backups/mealie/"
+MEALIE_TARGET_DIR="${TMP_DIR}service-backups/mealie/"
 mkdir -p "$MEALIE_TARGET_DIR"
+echo "Triggering Mealie backup creation"
 curl -s -X 'POST' \
   "${MEALIE_URL}/api/admin/backups" \
   -H 'accept: application/json' \
@@ -34,7 +35,7 @@ curl -s -X 'POST' \
   -w '\n%{http_code}' | tail -1 | grep -q 201
 
 if [ $? -eq 0 ]; then
-  echo "Mealie backup successfully created"
+  echo "Mealie backup successfully created, downloading backup file"
   MEALIE_LATEST_BACKUP=$(curl -s -X 'GET' \
   "${MEALIE_URL}/api/admin/backups" \
   -H 'accept: application/json' \
@@ -49,12 +50,12 @@ if [ $? -eq 0 ]; then
   echo "Mealie backup downloaded to $MEALIE_TARGET_DIR$MEALIE_LATEST_BACKUP"
 
 else
-  echo "Mealie backup failed during backup creation"
+  echo "Mealie backup failed during backup creation continuing with next backup"
 fi
 
 # Audiobookshelf
 echo "Creating backup of Audiobookshelf"
-ADB_TARGET_DIR="${BACKUP_MOUNT_POINT}tmp/service-backups/audiobookshelf/"
+ADB_TARGET_DIR="${TMP_DIR}service-backups/audiobookshelf/"
 mkdir -p "$ADB_TARGET_DIR"
 echo "Creating backup of Audiobookshelf to $ADB_TARGET_DIR"
 LAST_ADB=$(ls -1 "$AUDIOBOOKSHELF_BACKUP_SRC_LOCATION" | sort | tail -1)
@@ -71,7 +72,7 @@ echo "Finished stopping Paperless-ngx containers. The backup is part of borg bac
 # Immich 
 # Put immich server into maintenance mode to avoid inconsistent backups
 echo "Putting Immich into maintenance mode"
-mkdir -p "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/"
+mkdir -p "${TMP_DIR}service-backups/immich/"
 docker exec -d $IMMICH_SERVER_CONTAINER_NAME sh -c "immich-admin enable-maintenance-mode"
 # Wait for a few seconds to ensure the command is processed
 echo "Waiting 15 seconds to start maintenance mode"
@@ -79,7 +80,7 @@ sleep 15
 echo "Starting Immich Database dump"
 # Backup Immich database
 export PGPASSWORD=$IMMICH_DATABASE_PASSWORD
-docker exec -t $IMMICH_DATABASE_CONTAINER_NAME pg_dump --clean --if-exists --dbname=$IMMICH_DATABASE_NAME --username=$IMMICH_DATABASE_USERNAME  > "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/immich_database_backup.sql"
+docker exec -t $IMMICH_DATABASE_CONTAINER_NAME pg_dump --clean --if-exists --dbname=$IMMICH_DATABASE_NAME --username=$IMMICH_DATABASE_USERNAME  > "${TMP_DIR}service-backups/immich/immich_database_backup.sql"
 echo "Immich database backup completed remaining in maintenance mode for borg backup"
 
 #  ____        _          ____             _                
@@ -109,7 +110,7 @@ docker run --rm -e BORG_PASSPHRASE="$BORG_PASSPHRASE" \
   --exclude-from "$EXCLUDE_FILE" \
   "${BORG_REPO_PATH}::${BACKUP_NAME}" \
   "${MASSSTORAGE_DATASET}" \
-  "${BACKUP_MOUNT_POINT}tmp/service-backups/" \
+  "${TMP_DIR}service-backups/" \
   "${PAPERLESS_NGX_DATABASE_FOLDER}"
 
 #  ____                  _            ____                       _     _      
@@ -131,5 +132,5 @@ echo "Finished restarting Paperless-ngx containers"
 
 # Cleanup temporary backup files
 echo "Cleaning up temporary backup files"
-rm -rf ${BACKUP_MOUNT_POINT}tmp/service-backups/
+rm -rf ${TMP_DIR}service-backups/
 echo "Backup process completed successfully"
