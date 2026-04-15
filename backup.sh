@@ -82,16 +82,6 @@ docker stop $PAPERLESS_NGX_SERVER_CONTAINER_NAME
 docker stop $PAPERLESS_NGX_DATABASE_CONTAINER_NAME
 echo "Finished stopping Paperless-ngx containers. The backup is part of borg backup now."
 
-
-# Delete old nextcloud backups
-echo "Creating backup of Nextcloud"
-echo "Deleting old Nextcloud backups from $NEXTCLOUD_TARGET_DIR"
-rm -rf "$NEXTCLOUD_TARGET_DIR"
-echo "Creating backup of Nextcloud to $NEXTCLOUD_TARGET_DIR"
-mkdir -p "$NEXTCLOUD_TARGET_DIR"
-rsync -ah --info=progress2 "$NEXTCLOUD_BACKUP_SRC_LOCATION" "$NEXTCLOUD_TARGET_DIR/"
-echo "Finished backup of Nextcloud"
-
 #  ____        _          ____             _                
 # |  _ \  __ _| |_ __ _  | __ )  __ _  ___| | ___   _ _ __  
 # | | | |/ _` | __/ _` | |  _ \ / _` |/ __| |/ / | | | '_ \ 
