@@ -79,7 +79,7 @@ sleep 15
 echo "Starting Immich Database dump"
 # Backup Immich database
 export PGPASSWORD=$IMMICH_DATABASE_PASSWORD
-docker exec -t $IMMICH_DATABASE_CONTAINER_NAME pg_dumpall --clean --if-exists --username=$IMMICH_DATABASE_USERNAME > "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/immich_database_backup.sql"
+docker exec -t $IMMICH_DATABASE_CONTAINER_NAME pg_dump --clean --if-exists --dbname=$IMMICH_DATABASE_NAME --username=$IMMICH_DATABASE_USERNAME  > "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/immich_database_backup.sql"
 echo "Immich database backup completed remaining in maintenance mode for borg backup"
 
 #  ____        _          ____             _                
