@@ -23,20 +23,6 @@ echo "Borg container built successfully"
 # |____/ \___|_|    \_/ |_|\___\___| |____/ \__,_|\___|_|\_\\__,_| .__/|___/
 #                                                                |_|        
 
-# Immich 
-# Put immich server into maintenance mode to avoid inconsistent backups
-echo "Putting Immich into maintenance mode"
-mkdir -p "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/"
-docker exec -d $IMMICH_SERVER_CONTAINER_NAME sh -c "immich-admin enable-maintenance-mode"
-# Wait for a few seconds to ensure the command is processed
-echo "Waiting 15 seconds to start maintenance mode"
-sleep 15
-echo "Starting Immich Database dump"
-# Backup Immich database
-export PGPASSWORD=$IMMICH_DATABASE_PASSWORD
-docker exec -t $IMMICH_DATABASE_CONTAINER_NAME pg_dumpall --clean --if-exists --username=$IMMICH_DATABASE_USERNAME > "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/immich_database_backup.sql"
-echo "Immich database backup completed remaining in maintenance mode for borg backup"
-
 # Mealie
 echo "Creating backup of Mealie"
 MEALIE_TARGET_DIR="${BACKUP_MOUNT_POINT}tmp/service-backups/mealie/"
@@ -81,6 +67,20 @@ echo "Stopping Paperless-ngx webserver and database containers"
 docker stop $PAPERLESS_NGX_SERVER_CONTAINER_NAME
 docker stop $PAPERLESS_NGX_DATABASE_CONTAINER_NAME
 echo "Finished stopping Paperless-ngx containers. The backup is part of borg backup now."
+
+# Immich 
+# Put immich server into maintenance mode to avoid inconsistent backups
+echo "Putting Immich into maintenance mode"
+mkdir -p "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/"
+docker exec -d $IMMICH_SERVER_CONTAINER_NAME sh -c "immich-admin enable-maintenance-mode"
+# Wait for a few seconds to ensure the command is processed
+echo "Waiting 15 seconds to start maintenance mode"
+sleep 15
+echo "Starting Immich Database dump"
+# Backup Immich database
+export PGPASSWORD=$IMMICH_DATABASE_PASSWORD
+docker exec -t $IMMICH_DATABASE_CONTAINER_NAME pg_dumpall --clean --if-exists --username=$IMMICH_DATABASE_USERNAME > "${BACKUP_MOUNT_POINT}/tmp/service-backups/immich/immich_database_backup.sql"
+echo "Immich database backup completed remaining in maintenance mode for borg backup"
 
 #  ____        _          ____             _                
 # |  _ \  __ _| |_ __ _  | __ )  __ _  ___| | ___   _ _ __  
