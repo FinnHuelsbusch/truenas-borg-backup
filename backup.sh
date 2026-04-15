@@ -94,7 +94,23 @@ echo "Immich database backup completed remaining in maintenance mode for borg ba
 # Init borg repo if not already initialized
 if [ ! -d "$BORG_REPO_PATH" ]; then
   echo "Initializing borg repository at $BORG_REPO_PATH"
+  read -p "Do you want to continue? (y/n) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Backup process aborted by user. Cleaning up temporary backup files"
+    rm -rf ${TMP_DIR}service-backups/
+    exit 1
+  fi  
   docker run --rm -e BORG_PASSPHRASE="$BORG_PASSPHRASE" -v "$BORG_REPO_PATH:$BORG_REPO_PATH" borg-backup borg init --encryption=repokey-blake2 "$BORG_REPO_PATH"
+fi
+
+
+read -p "Starting borg backup process. Do you want to continue? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "Backup process aborted by user. Cleaning up temporary backup files"
+  rm -rf ${TMP_DIR}service-backups/
+  exit 1
 fi
 
 # Create borg backup
