@@ -125,6 +125,7 @@ docker run --rm -e BORG_PASSPHRASE="$BORG_PASSPHRASE" \
   -v "${PAPERLESS_NGX_DATABASE_FOLDER}:${PAPERLESS_NGX_DATABASE_FOLDER}" \
   -v "${TMP_DIR}service-backups/:${TMP_DIR}service-backups/" \
   -v "${EXCLUDE_FILE}:${EXCLUDE_FILE}" \
+  -v "${BORG_REPO_PATH}:${BORG_REPO_PATH}" \
   borg-backup borg create --stats --progress -C lz4 \
   --exclude-from "$EXCLUDE_FILE" \
   "${BORG_REPO_PATH}::${BACKUP_NAME}" \
