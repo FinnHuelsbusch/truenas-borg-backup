@@ -63,12 +63,37 @@ LAST_ADB=$(ls -1 "$AUDIOBOOKSHELF_BACKUP_SRC_LOCATION" | sort | tail -1)
 rsync -av "$AUDIOBOOKSHELF_BACKUP_SRC_LOCATION/$LAST_ADB" "$ADB_TARGET_DIR/"
 echo "Finished backup of Audiobookshelf"
 
+# Jellyfin
+echo "Stopping Jellyfin"
+docker stop $JELLYFIN_CONTAINER_NAME
+JELLYFIN_TARGET_DIR="${TMP_DIR}service-backups/jellyfin/"
+mkdir -p $JELLYFIN_TARGET_DIR
+rsync -ah --exclude='*/cache/*' ${JELLYFIN_CONFIG_PATH} ${JELLYFIN_TARGET_DIR}
+echo "Jellyfin backup completed remaining in maintenance mode for borg backup"
+
 # Paperless-ngx
 echo "Creating backup of Paperless-ngx database"
 echo "Stopping Paperless-ngx webserver and database containers"
 docker stop $PAPERLESS_NGX_SERVER_CONTAINER_NAME
 docker stop $PAPERLESS_NGX_DATABASE_CONTAINER_NAME
 echo "Finished stopping Paperless-ngx containers. The backup is part of borg backup now."
+
+# opencloud
+echo "Stopping opencloud (incl. Radicale)"
+docker stop $OPENCLOUD_RADICALE_CONTAINER_NAME
+docker stop $OPENCLOUD_CONTAINER_NAME
+echo "Copying opencloud configuration files"
+OPENCLOUD_TARGET_DIR="${TMP_DIR}service-backups/opencloud/"
+mkdir -p "$OPENCLOUD_TARGET_DIR"
+rsync -ah ${OPENCLOUD_CONFIG_DATASET}/* $OPENCLOUD_TARGET_DIR
+echo "Finished stopping opencloud containers. The backup is part of borg backup now."
+
+# Docker Compose files
+echo "Copying Docker Compose files"
+DOCKER_COMPOSE_TARGET_DIR="${TMP_DIR}service-backups/docker-compose/"
+mkdir -p "$DOCKER_COMPOSE_TARGET_DIR"
+cp $DOCKER_COMPOSE_FILES "$DOCKER_COMPOSE_TARGET_DIR"
+echo "Finished copying Docker Compose files"
 
 # Immich 
 # Put immich server into maintenance mode to avoid inconsistent backups
@@ -149,6 +174,17 @@ echo "Restarting Paperless-ngx webserver and database containers"
 docker start $PAPERLESS_NGX_DATABASE_CONTAINER_NAME
 docker start $PAPERLESS_NGX_SERVER_CONTAINER_NAME
 echo "Finished restarting Paperless-ngx containers"
+
+# opencloud
+echo "Restarting opencloud (incl. Radicale)"
+docker start $OPENCLOUD_RADICALE_CONTAINER_NAME
+docker start $OPENCLOUD_CONTAINER_NAME
+echo "Finished starting opencloud containers."
+
+# Jellyfin
+echo "Restarting Jellyfin"
+docker start $JELLYFIN_CONTAINER_NAME
+echo "Finished starting Jellyfin containers."
 
 # Cleanup temporary backup files
 echo "Cleaning up temporary backup files"
