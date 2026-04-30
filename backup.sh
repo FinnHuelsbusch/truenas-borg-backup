@@ -107,7 +107,7 @@ echo ""
 echo "Copying Docker Compose files"
 DOCKER_COMPOSE_TARGET_DIR="${TMP_DIR}service-backups/docker-compose/"
 mkdir -p "$DOCKER_COMPOSE_TARGET_DIR"
-cp $DOCKER_COMPOSE_FILES "$DOCKER_COMPOSE_TARGET_DIR"
+rsync -ah "${DOCKER_COMPOSE_FILES%/}/" "$DOCKER_COMPOSE_TARGET_DIR"
 echo "Finished copying Docker Compose files"
 
 echo ""
