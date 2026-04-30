@@ -54,6 +54,9 @@ else
   echo "Mealie backup failed during backup creation continuing with next backup"
 fi
 
+echo ""
+echo ""
+
 # Audiobookshelf
 echo "Creating backup of Audiobookshelf"
 ADB_TARGET_DIR="${TMP_DIR}service-backups/audiobookshelf/"
@@ -63,6 +66,9 @@ LAST_ADB=$(ls -1 "$AUDIOBOOKSHELF_BACKUP_SRC_LOCATION" | sort | tail -1)
 rsync -av "$AUDIOBOOKSHELF_BACKUP_SRC_LOCATION/$LAST_ADB" "$ADB_TARGET_DIR/"
 echo "Finished backup of Audiobookshelf"
 
+echo ""
+echo ""
+
 # Jellyfin
 echo "Stopping Jellyfin"
 docker stop $JELLYFIN_CONTAINER_NAME
@@ -71,12 +77,18 @@ mkdir -p $JELLYFIN_TARGET_DIR
 rsync -ah --exclude='*/cache/*' ${JELLYFIN_CONFIG_PATH} ${JELLYFIN_TARGET_DIR}
 echo "Jellyfin backup completed remaining in maintenance mode for borg backup"
 
+echo ""
+echo ""
+
 # Paperless-ngx
 echo "Creating backup of Paperless-ngx database"
 echo "Stopping Paperless-ngx webserver and database containers"
 docker stop $PAPERLESS_NGX_SERVER_CONTAINER_NAME
 docker stop $PAPERLESS_NGX_DATABASE_CONTAINER_NAME
 echo "Finished stopping Paperless-ngx containers. The backup is part of borg backup now."
+
+echo ""
+echo ""
 
 # opencloud
 echo "Stopping opencloud (incl. Radicale)"
@@ -88,12 +100,18 @@ mkdir -p "$OPENCLOUD_TARGET_DIR"
 rsync -ah ${OPENCLOUD_CONFIG_DATASET}/* $OPENCLOUD_TARGET_DIR
 echo "Finished stopping opencloud containers. The backup is part of borg backup now."
 
+echo ""
+echo ""
+
 # Docker Compose files
 echo "Copying Docker Compose files"
 DOCKER_COMPOSE_TARGET_DIR="${TMP_DIR}service-backups/docker-compose/"
 mkdir -p "$DOCKER_COMPOSE_TARGET_DIR"
 cp $DOCKER_COMPOSE_FILES "$DOCKER_COMPOSE_TARGET_DIR"
 echo "Finished copying Docker Compose files"
+
+echo ""
+echo ""
 
 # Immich 
 # Put immich server into maintenance mode to avoid inconsistent backups
@@ -108,6 +126,9 @@ echo "Starting Immich Database dump"
 export PGPASSWORD=$IMMICH_DATABASE_PASSWORD
 docker exec -t $IMMICH_DATABASE_CONTAINER_NAME pg_dump --clean --if-exists --dbname=$IMMICH_DATABASE_NAME --username=$IMMICH_DATABASE_USERNAME  > "${TMP_DIR}service-backups/immich/immich_database_backup.sql"
 echo "Immich database backup completed remaining in maintenance mode for borg backup"
+
+echo ""
+echo ""
 
 #  ____        _          ____             _                
 # |  _ \  __ _| |_ __ _  | __ )  __ _  ___| | ___   _ _ __  
