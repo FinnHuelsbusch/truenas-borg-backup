@@ -130,6 +130,16 @@ echo "Immich database backup completed remaining in maintenance mode for borg ba
 echo ""
 echo ""
 
+# Sure
+echo "Copying Sure backup file"
+SURE_TARGET_DIR="${TMP_DIR}service-backups/sure/"
+mkdir -p "$SURE_TARGET_DIR"
+rsync -ah "${SURE_BACKUP_SRC_LOCATION%/}/" "$SURE_TARGET_DIR"
+echo "Finished copying Sure backup file"
+
+echo ""
+echo ""
+
 #  ____        _          ____             _                
 # |  _ \  __ _| |_ __ _  | __ )  __ _  ___| | ___   _ _ __  
 # | | | |/ _` | __/ _` | |  _ \ / _` |/ __| |/ / | | | '_ \ 
